@@ -1,0 +1,16 @@
+{
+  "name": "lorem-fitem",
+  "version": "0.0.1",
+  "description": "Your Figma plugin",
+  "main": "code.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "watch": "tsc --watch"
+  },
+  "author": "John Dunning",
+  "license": "",
+  "devDependencies": {
+    "@figma/plugin-typings": "*",
+    "typescript": "*"
+  }
+}

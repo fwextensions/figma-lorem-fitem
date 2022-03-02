@@ -3,14 +3,30 @@
   "version": "0.0.1",
   "description": "Your Figma plugin",
   "main": "code.js",
-  "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "watch": "tsc --watch"
-  },
   "author": "John Dunning",
   "license": "",
+  "figma-plugin": {
+    "editorType": [
+      "figma"
+    ],
+    "id": "lorem-fitem",
+    "name": "Lorem Fit'em",
+    "main": "src/code.ts",
+    "ui": "src/ui.tsx"
+  },
+  "dependencies": {
+    "@create-figma-plugin/ui": "^1.8.4",
+    "@create-figma-plugin/utilities": "^1.8.4",
+    "preact": "^10"
+  },
   "devDependencies": {
+    "@create-figma-plugin/build": "^1.8.4",
+    "@create-figma-plugin/tsconfig": "^1.8.4",
     "@figma/plugin-typings": "*",
     "typescript": "*"
+  },
+  "scripts": {
+    "build": "build-figma-plugin --typecheck --minify",
+    "watch": "build-figma-plugin --typecheck --watch"
   }
 }

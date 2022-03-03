@@ -1,5 +1,5 @@
 export function main(
-	func: Function)
+	func: Function): Promise<void>
 {
 	return func()
 		.catch(console.error)

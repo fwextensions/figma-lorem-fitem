@@ -1,5 +1,5 @@
-// import { showUI } from '@create-figma-plugin/utilities'
-import {loadFontsAsync, main, selection} from "./utils/plugin";
+import {getWordCount} from "./utils/text";
+
 
 const sentences = [
 	"Lorem ipsum dolor sit amet, consectetuer adipiscing elit.",
@@ -377,46 +377,31 @@ const sentences = [
 ];
 
 
-function getRandomSentence()
+export function getRandomSentence(): string
 {
 	return sentences[Math.floor(Math.random() * sentences.length)];
 }
 
 
-export default function LoremFitem()
+export function getRandomtext(
+	targetWordCount: number
+): string
 {
-	main(async () => {
-		const textNodes = selection("TEXT") as TextNode[];
-		let node: TextNode;
+	let newWordCount = 0;
+	let newText = "";
+	let sentencesInPara = 0;
 
-		for (node of textNodes) {
-			await loadFontsAsync(node);
+	while (newWordCount < targetWordCount) {
+		const newSentence = getRandomSentence();
 
-			const targetHeight = node.height;
-			// const originalAutoResize = node.textAutoResize;
+		newWordCount += getWordCount(newSentence);
+		sentencesInPara++;
 
-			node.textAutoResize = "HEIGHT";
-			node.characters = "";
+		newText += sentencesInPara % 2 == 0
+			? "\n"
+			: " ";
+		newText += newSentence;
+	}
 
-			let {height} = node;
-
-			while (height < targetHeight) {
-				node.characters += getRandomSentence() + " ";
-				height = node.height;
-			}
-
-			node.characters = node.characters.trim();
-
-			while (height > targetHeight) {
-				node.characters = node.characters.slice(0, node.characters.lastIndexOf(" "));
-				height = node.height;
-			}
-
-			node.textAutoResize = "NONE";
-			node.resize(node.width, targetHeight);
-		}
-
-		// showUI({});
-	})
-		// .then(() => console.log("DONE", `|${figma.command}|`));
+	return newText.trim();
 }

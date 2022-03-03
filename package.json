@@ -9,9 +9,9 @@
     "editorType": [
       "figma"
     ],
-    "id": "lorem-fitem",
+    "id": "1080322942020337214",
     "name": "Lorem Fit'em",
-    "main": "src/code.ts",
+    "main": "src/main.ts",
     "ui": "src/ui.tsx"
   },
   "dependencies": {

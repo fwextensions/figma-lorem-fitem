@@ -42,6 +42,7 @@ function NumericInput({
 				id={label}
 				value={value}
 				disabled={disabled}
+				minimum={1}
 				onValueInput={onChange}
 				style={{
 					width: "5em"

@@ -1,8 +1,45 @@
-const spacePattern = /\s+/g;
+const spacePattern = / +/g;
+const whitespacePattern = /\s+/g;
+const trimSpacePattern = /^ *([\s\S]+?) +$/;
+
+
+export function trimSpaces(
+	text: string
+): string
+{
+	return text.replace(trimSpacePattern, "$1");
+}
+
+
+export function splitWords(
+	text: string
+): string[]
+{
+	return trimSpaces(text).split(spacePattern);
+}
+
 
 export function getWordCount(
-	string: string
+	text: string
 ): number
 {
-	return (string.match(spacePattern) || "").length + 1;
+	return (text.match(whitespacePattern) || "").length + 1;
+}
+
+
+export function appendText(
+	text: string,
+	newText: string | string[]
+): string
+{
+		// join the array of words, if necessary
+	const newTextString = Array.isArray(newText)
+		? newText.join(" ")
+		: newText;
+		// put a space between the existing text and the new text, if necessary
+	const connector = whitespacePattern.test(text.slice(-1) + newTextString[0])
+		? ""
+		: " ";
+
+	return text + connector + newTextString;
 }

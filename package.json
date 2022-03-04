@@ -12,7 +12,14 @@
     "id": "1080322942020337214",
     "name": "Lorem Fit'em",
     "main": "src/main.ts",
-    "ui": "src/ui.tsx"
+    "ui": "src/ui.tsx",
+    "relaunchButtons": {
+      "update": {
+        "name": "Update placeholder text",
+        "main": "src/main.ts",
+        "multipleSelection": true
+      }
+    }
   },
   "dependencies": {
     "@create-figma-plugin/ui": "^1.8.4",

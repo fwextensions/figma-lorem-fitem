@@ -1,10 +1,31 @@
-import {showUI} from "@create-figma-plugin/utilities";
+import {loadSettingsAsync, showUI} from "@create-figma-plugin/utilities";
 import {loadFontsAsync, selection} from "./utils/plugin";
 import {appendRandomText} from "./sentences"
-import {getWordCount, appendText, splitWords} from "./utils/text";
+import {appendText, getWordCount, splitWords} from "./utils/text";
+import {ISettings} from "./settings";
 
 
 const spacePattern = / +/;
+const getSentenceCountCache: Record<number, () => number> = {
+	0: () => 0
+};
+
+
+function createGetSentenceCount(
+	settings: ISettings
+): () => number
+{
+	const {showParagraphs, paraMinSentences, paraMaxSentences} = settings;
+	const range = Math.max(0, paraMaxSentences - paraMinSentences);
+
+	if (showParagraphs) {
+		return getSentenceCountCache[range]
+			|| (getSentenceCountCache[range] =
+				() => paraMinSentences + Math.round(Math.random() * range));
+	}
+
+	return getSentenceCountCache[0];
+}
 
 
 function getAvailableWords(
@@ -17,7 +38,9 @@ function getAvailableWords(
 
 
 function fillWithText(
-	node: TextNode)
+	node: TextNode,
+	defaultSettings: ISettings
+)
 {
 	const targetHeight = node.height;
 
@@ -25,6 +48,8 @@ function fillWithText(
 
 	let visibleText = node.characters;
 	let storedText = node.getPluginData("text") || visibleText;
+	let settings: ISettings = JSON.parse(node.getPluginData("settings") || "null") || defaultSettings;
+	const getSentenceCount = createGetSentenceCount(settings);
 	let {height} = node;
 	let wordsPerPx = height / getWordCount(visibleText);
 // TODO: when the text is empty, getWordCount always returns 1, but we should special case that.  have some other way to calc it
@@ -48,7 +73,11 @@ console.log("start", targetHeight, height, heightDelta, wordsPerPx, `|${visibleT
 			const newWordCount = newWords.length;
 
 			if (newWordCount < targetWordCount) {
-				storedText = appendRandomText(storedText, targetWordCount - newWordCount, () => 2 + Math.round(Math.random() * 2));
+				storedText = appendRandomText(
+					storedText,
+					targetWordCount - newWordCount,
+					getSentenceCount
+				);
 				newWords = getAvailableWords(visibleText, storedText);
 			}
 
@@ -81,15 +110,21 @@ console.log(loops, "after adding text", heightDelta, wordsPerPx);
 export default async function LoremFitem()
 {
 	const textNodes = selection("TEXT") as TextNode[];
+	const settings = await loadSettingsAsync({
+		showParagraphs: true,
+		paraMinSentences: 2,
+		paraMaxSentences: 5
+	});
+console.log(settings);
 
 	for (const node of textNodes) {
 		await loadFontsAsync(node);
 const t = Date.now();
-		fillWithText(node);
+		fillWithText(node, settings);
 console.log(Date.now() - t);
 	}
 
-figma.closePlugin();
+//figma.closePlugin();
 
-	showUI({});
+	showUI({}, { settings });
 }

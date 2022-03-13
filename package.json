@@ -17,6 +17,7 @@
       "update": {
         "name": "Update placeholder text",
         "main": "src/main.ts",
+        "ui": "src/ui.tsx",
         "multipleSelection": true
       }
     }

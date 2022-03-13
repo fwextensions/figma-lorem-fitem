@@ -1,5 +1,5 @@
 import {h} from "preact"
-import {useState} from "preact/compat";
+import {useCallback, useState} from "preact/compat";
 import {
 	render,
 	Container,
@@ -10,13 +10,14 @@ import {
     Inline,
     Stack
 } from "@create-figma-plugin/ui"
+import {ISettings} from "./settings";
 
 
 interface NumericInputProps {
 	label: string,
-	value: string,
+	value: number,
 	disabled: boolean,
-	onChange: (value: string) => void
+	onChange: (value: number) => void
 }
 
 function NumericInput({
@@ -26,6 +27,13 @@ function NumericInput({
 	onChange,
 	...props}: NumericInputProps)
 {
+	const valueString = String(value);
+
+	const handleValueInput = useCallback(
+		(valueString: string) => onChange(Number(valueString)),
+		[onChange]
+	);
+
 	return (
 		<Inline space="extraSmall">
 			<label
@@ -40,10 +48,10 @@ function NumericInput({
 			</label>
 			<TextboxNumeric integer
 				id={label}
-				value={value}
+				value={valueString}
 				disabled={disabled}
 				minimum={1}
-				onValueInput={onChange}
+				onValueInput={handleValueInput}
 				style={{
 					width: "5em"
 				}}
@@ -54,10 +62,14 @@ function NumericInput({
 }
 
 
-function Plugin() {
-	const [showParagraphs, setShowParagraphs] = useState(false);
-	const [paraMinSentences, setParaMinSentences] = useState("2");
-	const [paraMaxSentences, setParaMaxSentences] = useState("4");
+interface PluginProps {
+	settings: ISettings
+}
+
+function Plugin({ settings }: PluginProps) {
+	const [showParagraphs, setShowParagraphs] = useState(settings.showParagraphs);
+	const [paraMinSentences, setParaMinSentences] = useState(settings.paraMinSentences);
+	const [paraMaxSentences, setParaMaxSentences] = useState(settings.paraMaxSentences);
 
 	return (
 		<Container space="medium">

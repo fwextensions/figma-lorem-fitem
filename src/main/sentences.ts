@@ -1,4 +1,4 @@
-import {appendText, getWordCount, trimSpaces} from "./utils/text";
+import {appendText, getWordCount, trimSpaces} from "../utils/text";
 
 
 const sentences = [

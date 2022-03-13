@@ -11,13 +11,13 @@
     ],
     "id": "1080322942020337214",
     "name": "Lorem Fit'em",
-    "main": "src/main.ts",
-    "ui": "src/ui.tsx",
+    "main": "src/main/main.ts",
+    "ui": "src/ui/ui.tsx",
     "relaunchButtons": {
       "update": {
         "name": "Update placeholder text",
-        "main": "src/main.ts",
-        "ui": "src/ui.tsx",
+        "main": "src/main/main.ts",
+        "ui": "src/ui/ui.tsx",
         "multipleSelection": true
       }
     }

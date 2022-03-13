@@ -1,8 +1,8 @@
 import {loadSettingsAsync, showUI} from "@create-figma-plugin/utilities";
-import {loadFontsAsync, selection} from "./utils/plugin";
+import {loadFontsAsync, selection} from "../utils/plugin";
 import {appendRandomText} from "./sentences"
-import {appendText, getWordCount, splitWords} from "./utils/text";
-import {ISettings} from "./settings";
+import {appendText, getWordCount, splitWords} from "../utils/text";
+import {ISettings} from "../utils/settings";
 
 
 const spacePattern = / +/;
@@ -58,7 +58,7 @@ function fillWithText(
 	let loops = 0;
 console.log("start", targetHeight, height, heightDelta, wordsPerPx, `|${visibleText}|`, `|${storedText}|`);
 
-	while (Math.abs(heightDelta) > 0 && loops < 10) {
+	while (heightDelta !== 0 && loops < 10) {
 		if (heightDelta < 0) {
 				// keep track of having already cut down the text, so we don't
 				// ping pong back and forth across the target height

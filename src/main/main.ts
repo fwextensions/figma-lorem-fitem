@@ -1,13 +1,15 @@
-import {loadSettingsAsync, showUI} from "@create-figma-plugin/utilities";
+import {loadSettingsAsync, on, showUI} from "@create-figma-plugin/utilities";
 import {loadFontsAsync, selection} from "../utils/plugin";
-import {appendRandomText} from "./sentences"
+import {appendRandomText, getRandomSentence} from "./sentences"
 import {appendText, getWordCount, splitWords} from "../utils/text";
-import {ISettings} from "../utils/settings";
+import {getNodeSettings, ISettings, setNodeSettings} from "../utils/settings";
 
 
 const spacePattern = / +/;
-const getSentenceCountCache: Record<number, () => number> = {
-	0: () => 0
+const spaceNewlinePattern = / *\n+/g;
+const periodPattern = /\.\s*/g;
+const getSentenceCountCache: Record<string, () => number> = {
+	"0": () => 0
 };
 
 
@@ -17,14 +19,15 @@ function createGetSentenceCount(
 {
 	const {showParagraphs, paraMinSentences, paraMaxSentences} = settings;
 	const range = Math.max(0, paraMaxSentences - paraMinSentences);
+	const id = [paraMinSentences, range].join("|");
 
 	if (showParagraphs) {
-		return getSentenceCountCache[range]
-			|| (getSentenceCountCache[range] =
-				() => paraMinSentences + Math.round(Math.random() * range));
+		return getSentenceCountCache[id]
+			|| (getSentenceCountCache[id] =
+				() => (paraMinSentences + Math.round(Math.random() * range)));
 	}
 
-	return getSentenceCountCache[0];
+	return getSentenceCountCache["0"];
 }
 
 
@@ -56,9 +59,9 @@ function fillWithText(
 	let heightDelta = targetHeight - height;
 	let alreadyReducedText = false;
 	let loops = 0;
-console.log("start", targetHeight, height, heightDelta, wordsPerPx, `|${visibleText}|`, `|${storedText}|`);
+console.log("start", targetHeight, height, heightDelta, wordsPerPx, `|${visibleText}|\n`, `|${storedText}|`);
 
-	while (heightDelta !== 0 && loops < 10) {
+	while (heightDelta !== 0 && loops < 5) {
 		if (heightDelta < 0) {
 				// keep track of having already cut down the text, so we don't
 				// ping pong back and forth across the target height
@@ -81,13 +84,13 @@ console.log("start", targetHeight, height, heightDelta, wordsPerPx, `|${visibleT
 				newWords = getAvailableWords(visibleText, storedText);
 			}
 
-console.log(loops, "add text",  targetWordCount, newWords.length, newWords);
+//console.log(loops, "add text",  targetWordCount, newWords.length, newWords);
 
 			visibleText = appendText(visibleText, newWords.slice(0, targetWordCount));
 		} else {
 			break;
 		}
-console.log(loops, heightDelta, visibleText);
+//console.log(loops, heightDelta, visibleText);
 
 		node.characters = visibleText;
 		height = node.height;
@@ -107,15 +110,87 @@ console.log(loops, "after adding text", heightDelta, wordsPerPx);
 }
 
 
+function setParagraphs(
+	text: string,
+	settings: ISettings
+): string
+{
+	let result = text.replace(spaceNewlinePattern, " ");
+
+	if (settings.showParagraphs) {
+		const getSentenceCount = createGetSentenceCount(settings);
+		let targetSentenceCount = getSentenceCount();
+		let currentSentenceCount = 0;
+
+		result = result.replace(periodPattern, () => {
+			currentSentenceCount++;
+
+			if (currentSentenceCount % targetSentenceCount == 0) {
+				targetSentenceCount = getSentenceCount();
+				currentSentenceCount = 0;
+
+					// put a space before the newline so the words on either
+					// side will get counted separately
+				return ". \n";
+			} else {
+					// put the period back with a single space after it
+				return ". ";
+			}
+		});
+	}
+
+	return result;
+}
+
+
+async function updateTextNodes(
+	nodes: TextNode[],
+	newSettings: ISettings
+)
+{
+	for (const node of nodes) {
+		await loadFontsAsync(node);
+
+		let storedText = node.getPluginData("text") || "";
+		let settings = getNodeSettings(node);
+
+		if (
+			!settings
+			|| settings.showParagraphs !== newSettings.showParagraphs
+			|| settings.paraMinSentences !== newSettings.paraMinSentences
+			|| settings.paraMaxSentences !== newSettings.paraMaxSentences
+		) {
+			if (!storedText) {
+				storedText = getRandomSentence();
+			}
+
+			storedText = setParagraphs(storedText, newSettings);
+			node.setPluginData("text", storedText);
+			node.characters = storedText;
+		}
+
+			// adjust the visible text in the node to fit using the updated
+			// text and new settings
+		setNodeSettings(node, newSettings);
+		fillWithText(node, newSettings);
+	}
+}
+
+
 export default async function LoremFitem()
 {
-	const textNodes = selection("TEXT") as TextNode[];
 	const settings = await loadSettingsAsync({
 		showParagraphs: true,
 		paraMinSentences: 2,
 		paraMaxSentences: 5
 	});
-console.log(settings);
+	const textNodes = selection("TEXT") as TextNode[];
+
+	on("settingsChanged", async (settings: ISettings) => {
+const t = Date.now();
+		await updateTextNodes(selection("TEXT") as TextNode[], settings);
+console.log(Date.now() - t);
+	});
 
 	for (const node of textNodes) {
 		await loadFontsAsync(node);

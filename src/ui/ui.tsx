@@ -1,5 +1,5 @@
 import {h} from "preact"
-import {useState} from "preact/compat";
+import {useEffect, useState} from "preact/compat";
 import {
 	Checkbox,
 	Container,
@@ -9,8 +9,13 @@ import {
 	Text,
 	VerticalSpace
 } from "@create-figma-plugin/ui"
+import {emit} from "@create-figma-plugin/utilities";
+import {useDebouncedCallback} from "use-debounce";
 import {ISettings} from "../utils/settings";
 import {NumericInput} from "./NumericInput";
+
+
+const SettingsChangedDelay = 750;
 
 
 interface PluginProps {
@@ -22,10 +27,23 @@ function Plugin({ settings }: PluginProps) {
 	const [paraMinSentences, setParaMinSentences] = useState(settings.paraMinSentences);
 	const [paraMaxSentences, setParaMaxSentences] = useState(settings.paraMaxSentences);
 
+	const sendSettings = useDebouncedCallback(
+		(settings: ISettings) => emit("settingsChanged", settings),
+		SettingsChangedDelay
+	);
+
+	useEffect(() => {
+		sendSettings({
+			showParagraphs,
+			paraMinSentences,
+			paraMaxSentences
+		});
+	}, [showParagraphs, paraMinSentences, paraMaxSentences]);
+
 	return (
 		<Container space="medium">
 			<VerticalSpace space="medium" />
-			<Stack space="large">
+			<Stack space="medium">
 				<Checkbox
 					value={showParagraphs}
 					onValueChange={setShowParagraphs}

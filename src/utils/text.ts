@@ -1,6 +1,6 @@
 const spacePattern = / +/g;
 const whitespacePattern = /\s+/g;
-const trimSpacePattern = /^ *([\s\S]+?) +$/;
+const trimSpacePattern = /^\s*([\s\S]+?)( *\n)?\s*$/;
 
 
 export function trimSpaces(

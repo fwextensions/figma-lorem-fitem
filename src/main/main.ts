@@ -1,5 +1,10 @@
-import {loadSettingsAsync, on, showUI} from "@create-figma-plugin/utilities";
-import {loadFontsAsync, selection} from "../utils/plugin";
+import {
+	loadSettingsAsync,
+	on,
+	saveSettingsAsync,
+	showUI
+} from "@create-figma-plugin/utilities";
+import {loadFontsAsync, processSelection} from "../utils/plugin";
 import {appendRandomText, getRandomSentence} from "./sentences"
 import {appendText, getWordCount, splitWords} from "../utils/text";
 import {getNodeSettings, ISettings, setNodeSettings} from "../utils/settings";
@@ -73,7 +78,7 @@ function applyParagraphSettings(
 }
 
 
-function fillWithText(
+function updateNodeText(
 	node: TextNode,
 	defaultSettings: ISettings
 )
@@ -180,28 +185,23 @@ export default async function LoremFitem()
 		paraMinSentences: 2,
 		paraMaxSentences: 5
 	});
-	const textNodes = selection("TEXT") as TextNode[];
-console.log(figma.command);
 
 	on("settingsChanged", async (settings: ISettings) => {
-		for (const node of selection("TEXT") as TextNode[]) {
+		await saveSettingsAsync(settings);
+		await processSelection("TEXT", async (node) => {
 			await loadFontsAsync(node);
 			updateNodeSettings(node, settings);
-			fillWithText(node, settings);
-		}
+			updateNodeText(node, settings);
+		});
 	});
-
-	for (const node of textNodes) {
-		await loadFontsAsync(node);
-const t = Date.now();
-		fillWithText(node, settings);
-console.log(Date.now() - t);
-	}
-
 
 	if (!figma.command) {
 		showUI({}, { settings });
 	} else {
+		await processSelection("TEXT", async (node) => {
+			await loadFontsAsync(node);
+			updateNodeText(node, settings);
+		});
 		figma.closePlugin();
 	}
 }

@@ -40,6 +40,39 @@ function getAvailableWords(
 }
 
 
+function applyParagraphSettings(
+	text: string,
+	settings: ISettings
+): string
+{
+	let result = text.replace(spaceNewlinePattern, " ");
+
+	if (settings.showParagraphs) {
+		const getSentenceCount = createGetSentenceCount(settings);
+		let targetSentenceCount = getSentenceCount();
+		let currentSentenceCount = 0;
+
+		result = result.replace(periodPattern, () => {
+			currentSentenceCount++;
+
+			if (currentSentenceCount % targetSentenceCount == 0) {
+				targetSentenceCount = getSentenceCount();
+				currentSentenceCount = 0;
+
+					// put a space before the newline so the words on either
+					// side will get counted separately
+				return ". \n";
+			} else {
+					// put the period back with a single space after it
+				return ". ";
+			}
+		});
+	}
+
+	return result;
+}
+
+
 function fillWithText(
 	node: TextNode,
 	defaultSettings: ISettings
@@ -59,7 +92,7 @@ function fillWithText(
 	let heightDelta = targetHeight - height;
 	let alreadyReducedText = false;
 	let loops = 0;
-console.log("start", targetHeight, height, heightDelta, wordsPerPx, `|${visibleText}|\n`, `|${storedText}|`);
+//console.log("start", targetHeight, height, heightDelta, wordsPerPx, `|${visibleText}|\n`, `|${storedText}|`);
 
 	while (heightDelta !== 0 && loops < 5) {
 		if (heightDelta < 0) {
@@ -100,6 +133,7 @@ console.log(loops, "after adding text", heightDelta, wordsPerPx);
 		loops++;
 	}
 
+console.log("=== loop count", loops);
 	node.characters = node.characters.trim();
 	node.textAutoResize = "NONE";
 	node.resize(node.width, targetHeight);
@@ -110,70 +144,32 @@ console.log(loops, "after adding text", heightDelta, wordsPerPx);
 }
 
 
-function setParagraphs(
-	text: string,
-	settings: ISettings
-): string
-{
-	let result = text.replace(spaceNewlinePattern, " ");
-
-	if (settings.showParagraphs) {
-		const getSentenceCount = createGetSentenceCount(settings);
-		let targetSentenceCount = getSentenceCount();
-		let currentSentenceCount = 0;
-
-		result = result.replace(periodPattern, () => {
-			currentSentenceCount++;
-
-			if (currentSentenceCount % targetSentenceCount == 0) {
-				targetSentenceCount = getSentenceCount();
-				currentSentenceCount = 0;
-
-					// put a space before the newline so the words on either
-					// side will get counted separately
-				return ". \n";
-			} else {
-					// put the period back with a single space after it
-				return ". ";
-			}
-		});
-	}
-
-	return result;
-}
-
-
-async function updateTextNodes(
-	nodes: TextNode[],
+function updateNodeSettings(
+	node: TextNode,
 	newSettings: ISettings
 )
 {
-	for (const node of nodes) {
-		await loadFontsAsync(node);
+	let storedText = node.getPluginData("text") || "";
+	let settings = getNodeSettings(node);
 
-		let storedText = node.getPluginData("text") || "";
-		let settings = getNodeSettings(node);
-
-		if (
-			!settings
-			|| settings.showParagraphs !== newSettings.showParagraphs
-			|| settings.paraMinSentences !== newSettings.paraMinSentences
-			|| settings.paraMaxSentences !== newSettings.paraMaxSentences
-		) {
-			if (!storedText) {
-				storedText = getRandomSentence();
-			}
-
-			storedText = setParagraphs(storedText, newSettings);
-			node.setPluginData("text", storedText);
-			node.characters = storedText;
+	if (
+		!settings
+		|| settings.showParagraphs !== newSettings.showParagraphs
+		|| settings.paraMinSentences !== newSettings.paraMinSentences
+		|| settings.paraMaxSentences !== newSettings.paraMaxSentences
+	) {
+		if (!storedText) {
+			storedText = getRandomSentence();
 		}
 
-			// adjust the visible text in the node to fit using the updated
-			// text and new settings
-		setNodeSettings(node, newSettings);
-		fillWithText(node, newSettings);
+		storedText = applyParagraphSettings(storedText, newSettings);
+		node.setPluginData("text", storedText);
+		node.characters = storedText;
 	}
+
+		// adjust the visible text in the node to fit using the updated
+		// text and new settings
+	setNodeSettings(node, newSettings);
 }
 
 
@@ -185,11 +181,14 @@ export default async function LoremFitem()
 		paraMaxSentences: 5
 	});
 	const textNodes = selection("TEXT") as TextNode[];
+console.log(figma.command);
 
 	on("settingsChanged", async (settings: ISettings) => {
-const t = Date.now();
-		await updateTextNodes(selection("TEXT") as TextNode[], settings);
-console.log(Date.now() - t);
+		for (const node of selection("TEXT") as TextNode[]) {
+			await loadFontsAsync(node);
+			updateNodeSettings(node, settings);
+			fillWithText(node, settings);
+		}
 	});
 
 	for (const node of textNodes) {
@@ -199,7 +198,10 @@ const t = Date.now();
 console.log(Date.now() - t);
 	}
 
-//figma.closePlugin();
 
-	showUI({}, { settings });
+	if (!figma.command) {
+		showUI({}, { settings });
+	} else {
+		figma.closePlugin();
+	}
 }

@@ -1,5 +1,5 @@
 import {h} from "preact"
-import {useEffect, useState} from "preact/compat";
+import {useEffect, useRef, useState} from "preact/compat";
 import {
 	Checkbox,
 	Container,
@@ -15,7 +15,7 @@ import {ISettings} from "../utils/settings";
 import {NumericInput} from "./NumericInput";
 
 
-const SettingsChangedDelay = 750;
+const SettingsChangedDelay = 500;
 
 
 interface PluginProps {
@@ -26,14 +26,28 @@ function Plugin({ settings }: PluginProps) {
 	const [showParagraphs, setShowParagraphs] = useState(settings.showParagraphs);
 	const [paraMinSentences, setParaMinSentences] = useState(settings.paraMinSentences);
 	const [paraMaxSentences, setParaMaxSentences] = useState(settings.paraMaxSentences);
+	const lastSettings = useRef(settings);
 
-	const sendSettings = useDebouncedCallback(
-		(settings: ISettings) => emit("settingsChanged", settings),
+	const emitSettings = useDebouncedCallback(
+		(newSettings: ISettings) => {
+			const {showParagraphs, paraMinSentences, paraMaxSentences} = lastSettings.current;
+
+				// only emit a message with the new settings if they're actually
+				// different than the current state
+			if (
+				newSettings.showParagraphs !== showParagraphs
+				|| newSettings.paraMinSentences !== paraMinSentences
+				|| newSettings.paraMaxSentences !== paraMaxSentences
+			) {
+				lastSettings.current = newSettings;
+				emit("settingsChanged", newSettings);
+			}
+		},
 		SettingsChangedDelay
 	);
 
 	useEffect(() => {
-		sendSettings({
+		emitSettings({
 			showParagraphs,
 			paraMinSentences,
 			paraMaxSentences

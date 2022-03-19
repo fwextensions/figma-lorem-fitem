@@ -19,6 +19,12 @@
         "main": "src/main/main.ts",
         "ui": "src/ui/ui.tsx",
         "multipleSelection": true
+      },
+      "randomize": {
+        "name": "Randomize placeholder text",
+        "main": "src/main/main.ts",
+        "ui": "src/ui/ui.tsx",
+        "multipleSelection": true
       }
     }
   },

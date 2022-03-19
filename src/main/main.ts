@@ -13,6 +13,10 @@ import {getNodeSettings, ISettings, setNodeSettings} from "../utils/settings";
 const spacePattern = / +/;
 const spaceNewlinePattern = / *\n+/g;
 const periodPattern = /\.\s*/g;
+const relaunchButtons = {
+	update: "",
+	randomize: ""
+};
 const getSentenceCountCache: Record<string, () => number> = {
 	"0": () => 0
 };
@@ -143,9 +147,6 @@ console.log("=== loop count", loops);
 	node.textAutoResize = "NONE";
 	node.resize(node.width, targetHeight);
 	node.setPluginData("text", storedText);
-
-		// show the update relaunch button with no descriptive text
-	node.setRelaunchData({ update: "" });
 }
 
 
@@ -178,6 +179,15 @@ function updateNodeSettings(
 }
 
 
+function updateNodeRelaunchButtons(
+	node: TextNode
+)
+{
+		// show the update relaunch button with no descriptive text
+	node.setRelaunchData({ ...relaunchButtons });
+}
+
+
 export default async function LoremFitem()
 {
 	const settings = await loadSettingsAsync({
@@ -192,16 +202,31 @@ export default async function LoremFitem()
 			await loadFontsAsync(node);
 			updateNodeSettings(node, settings);
 			updateNodeText(node, settings);
+			updateNodeRelaunchButtons(node);
 		});
 	});
 
-	if (!figma.command) {
-		showUI({}, { settings });
-	} else {
-		await processSelection("TEXT", async (node) => {
-			await loadFontsAsync(node);
-			updateNodeText(node, settings);
-		});
-		figma.closePlugin();
+	switch (figma.command) {
+		case "update":
+			await processSelection("TEXT", async (node) => {
+				await loadFontsAsync(node);
+				updateNodeText(node, settings);
+			});
+			figma.closePlugin();
+			break;
+
+		case "randomize":
+			await processSelection("TEXT", async (node) => {
+				await loadFontsAsync(node);
+				node.characters = "";
+				node.setPluginData("text", "");
+				updateNodeText(node, settings);
+			});
+			figma.closePlugin();
+			break;
+
+		default:
+			showUI({}, { settings });
+			break;
 	}
 }

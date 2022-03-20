@@ -7,7 +7,6 @@ export interface NodeSettings {
 	paraMaxSentences: number
 }
 export interface PluginSettings {
-	isUIOpen: boolean,
 	nodeSettings: NodeSettings
 }
 
@@ -17,7 +16,6 @@ const DefaultNodeSettings: NodeSettings = {
 	paraMaxSentences: 5
 };
 const DefaultPluginSettings: PluginSettings = {
-	isUIOpen: false,
 	nodeSettings: DefaultNodeSettings
 };
 

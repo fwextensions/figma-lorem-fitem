@@ -1,6 +1,6 @@
 import {on, showUI} from "@create-figma-plugin/utilities";
 import {debounce} from "debounce";
-import {loadFontsAsync, processSelection} from "../utils/plugin";
+import {findInGroups, loadFontsAsync, processSelection} from "../utils/plugin";
 import {appendRandomText, getRandomSentence} from "./sentences"
 import {appendText, getWordCount, splitWords} from "../utils/text";
 import {
@@ -202,12 +202,14 @@ const handleSettingsChanged = debounce(async (settings: NodeSettings) => {
 	) {
 		lastNodeSettings = settings;
 		await setPluginSettings({ nodeSettings: settings });
-		await processSelection("TEXT", async (node) => {
+
+// TODO: updating text elements in auto layouts doesn't seem to work?
+		for (const node of findInGroups("TEXT")) {
 			await loadFontsAsync(node);
 			updateNodeSettings(node, settings);
 			updateNodeText(node, settings);
 			updateNodeRelaunchButtons(node);
-		});
+		}
 	}
 }, 500);
 
@@ -242,7 +244,6 @@ export default async function LoremFitem()
 			break;
 
 		default:
-			await setPluginSettings({ isUIOpen: true });
 			showUI({}, { settings: settings.nodeSettings });
 			break;
 	}

@@ -404,7 +404,7 @@ export function appendRandomText(
 
 		sentencesInPara = (currentParaText.match(periodPattern) || zeroLength).length;
 	}
-console.log("appendRandomText", sentencesInPara, sentencesInPara % targetSentenceCount, text);
+//console.log("appendRandomText", sentencesInPara, sentencesInPara % targetSentenceCount, text);
 
 	while (newWordCount < targetWordCount) {
 		const newSentence = getRandomSentence();
@@ -424,10 +424,10 @@ console.log("appendRandomText", sentencesInPara, sentencesInPara % targetSentenc
 		newText += connector + newSentence;
 		newWordCount += getWordCount(newSentence);
 	}
-console.log("appendRandomText", newWordCount, newText.replace(/\n/g, "|||\n"));
+//console.log("appendRandomText", newWordCount, newText.replace(/\n/g, "|||\n"));
 
 	newText = appendText(text, newText);
-console.log("appendRandomText after append", newText.replace(/\n/g, "|||\n"));
+//console.log("appendRandomText after append", newText.replace(/\n/g, "|||\n"));
 
 		// we don't just call .trim() on the string because we wouldn't want to
 		// trim a return that might be at the end of the string

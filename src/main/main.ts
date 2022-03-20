@@ -1,13 +1,14 @@
-import {
-	loadSettingsAsync,
-	on,
-	saveSettingsAsync,
-	showUI
-} from "@create-figma-plugin/utilities";
+import {on, showUI} from "@create-figma-plugin/utilities";
 import {loadFontsAsync, processSelection} from "../utils/plugin";
 import {appendRandomText, getRandomSentence} from "./sentences"
 import {appendText, getWordCount, splitWords} from "../utils/text";
-import {getNodeSettings, ISettings, setNodeSettings} from "../utils/settings";
+import {
+	getNodeSettings,
+	getPluginSettings,
+	NodeSettings,
+	setNodeSettings,
+	setPluginSettings
+} from "../utils/settings";
 
 
 const spacePattern = / +/;
@@ -23,7 +24,7 @@ const getSentenceCountCache: Record<string, () => number> = {
 
 
 function createGetSentenceCount(
-	settings: ISettings
+	settings: NodeSettings
 ): () => number
 {
 	const {showParagraphs, paraMinSentences, paraMaxSentences} = settings;
@@ -51,7 +52,7 @@ function getAvailableWords(
 
 function applyParagraphSettings(
 	text: string,
-	settings: ISettings
+	settings: NodeSettings
 ): string
 {
 	let result = text.replace(spaceNewlinePattern, " ");
@@ -84,7 +85,7 @@ function applyParagraphSettings(
 
 function updateNodeText(
 	node: TextNode,
-	defaultSettings: ISettings
+	defaultSettings: NodeSettings
 )
 {
 	const targetHeight = node.height;
@@ -93,7 +94,7 @@ function updateNodeText(
 
 	let visibleText = node.characters;
 	let storedText = node.getPluginData("text") || visibleText;
-	let settings: ISettings = JSON.parse(node.getPluginData("settings") || "null") || defaultSettings;
+	let settings: NodeSettings = JSON.parse(node.getPluginData("settings") || "null") || defaultSettings;
 	const getSentenceCount = createGetSentenceCount(settings);
 	let {height} = node;
 	let wordsPerPx = height / getWordCount(visibleText);
@@ -152,7 +153,7 @@ console.log("=== loop count", loops);
 
 function updateNodeSettings(
 	node: TextNode,
-	newSettings: ISettings
+	newSettings: NodeSettings
 )
 {
 	let storedText = node.getPluginData("text") || "";
@@ -190,14 +191,10 @@ function updateNodeRelaunchButtons(
 
 export default async function LoremFitem()
 {
-	const settings = await loadSettingsAsync({
-		showParagraphs: true,
-		paraMinSentences: 2,
-		paraMaxSentences: 5
-	});
+	const settings = await getPluginSettings();
 
-	on("settingsChanged", async (settings: ISettings) => {
-		await saveSettingsAsync(settings);
+	on("settingsChanged", async (settings: NodeSettings) => {
+		await setPluginSettings({ nodeSettings: settings });
 		await processSelection("TEXT", async (node) => {
 			await loadFontsAsync(node);
 			updateNodeSettings(node, settings);
@@ -210,7 +207,7 @@ export default async function LoremFitem()
 		case "update":
 			await processSelection("TEXT", async (node) => {
 				await loadFontsAsync(node);
-				updateNodeText(node, settings);
+				updateNodeText(node, settings.nodeSettings);
 			});
 			figma.closePlugin();
 			break;
@@ -220,13 +217,14 @@ export default async function LoremFitem()
 				await loadFontsAsync(node);
 				node.characters = "";
 				node.setPluginData("text", "");
-				updateNodeText(node, settings);
+				updateNodeText(node, settings.nodeSettings);
 			});
 			figma.closePlugin();
 			break;
 
 		default:
-			showUI({}, { settings });
+			await setPluginSettings({ isUIOpen: true });
+			showUI({}, { settings: settings.nodeSettings });
 			break;
 	}
 }

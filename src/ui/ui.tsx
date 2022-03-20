@@ -11,7 +11,7 @@ import {
 } from "@create-figma-plugin/ui"
 import {emit} from "@create-figma-plugin/utilities";
 import {useDebouncedCallback} from "use-debounce";
-import {ISettings} from "../utils/settings";
+import {NodeSettings} from "../utils/settings";
 import {NumericInput} from "./NumericInput";
 
 
@@ -19,7 +19,7 @@ const SettingsChangedDelay = 500;
 
 
 interface PluginProps {
-	settings: ISettings
+	settings: NodeSettings
 }
 
 function Plugin({ settings }: PluginProps) {
@@ -29,7 +29,7 @@ function Plugin({ settings }: PluginProps) {
 	const lastSettings = useRef(settings);
 
 	const emitSettings = useDebouncedCallback(
-		(newSettings: ISettings) => {
+		(newSettings: NodeSettings) => {
 			const {showParagraphs, paraMinSentences, paraMaxSentences} = lastSettings.current;
 
 				// only emit a message with the new settings if they're actually

@@ -31,13 +31,14 @@
   "dependencies": {
     "@create-figma-plugin/ui": "^1.8.4",
     "@create-figma-plugin/utilities": "^1.8.4",
-    "preact": "^10",
-    "use-debounce": "^7.0.1"
+    "debounce": "^1.2.1",
+    "preact": "^10"
   },
   "devDependencies": {
     "@create-figma-plugin/build": "^1.8.4",
     "@create-figma-plugin/tsconfig": "^1.8.4",
     "@figma/plugin-typings": "*",
+    "@types/debounce": "^1.2.1",
     "typescript": "*"
   },
   "scripts": {

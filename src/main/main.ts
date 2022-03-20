@@ -1,4 +1,5 @@
 import {on, showUI} from "@create-figma-plugin/utilities";
+import {debounce} from "debounce";
 import {loadFontsAsync, processSelection} from "../utils/plugin";
 import {appendRandomText, getRandomSentence} from "./sentences"
 import {appendText, getWordCount, splitWords} from "../utils/text";
@@ -21,6 +22,9 @@ const relaunchButtons = {
 const getSentenceCountCache: Record<string, () => number> = {
 	"0": () => 0
 };
+
+
+let lastNodeSettings: NodeSettings;
 
 
 function createGetSentenceCount(
@@ -189,11 +193,14 @@ function updateNodeRelaunchButtons(
 }
 
 
-export default async function LoremFitem()
-{
-	const settings = await getPluginSettings();
-
-	on("settingsChanged", async (settings: NodeSettings) => {
+const handleSettingsChanged = debounce(async (settings: NodeSettings) => {
+	if (
+		!lastNodeSettings
+		|| lastNodeSettings.showParagraphs !== settings.showParagraphs
+		|| lastNodeSettings.paraMinSentences !== settings.paraMinSentences
+		|| lastNodeSettings.paraMaxSentences !== settings.paraMaxSentences
+	) {
+		lastNodeSettings = settings;
 		await setPluginSettings({ nodeSettings: settings });
 		await processSelection("TEXT", async (node) => {
 			await loadFontsAsync(node);
@@ -201,7 +208,19 @@ export default async function LoremFitem()
 			updateNodeText(node, settings);
 			updateNodeRelaunchButtons(node);
 		});
-	});
+	}
+}, 500);
+
+
+export default async function LoremFitem()
+{
+	const settings = await getPluginSettings();
+
+	on("settingsChanged", handleSettingsChanged);
+
+		// in case there's a debounced call waiting, flush it when the plugin
+		// UI is closed
+	figma.on("close", () => handleSettingsChanged.flush());
 
 	switch (figma.command) {
 		case "update":

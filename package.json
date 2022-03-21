@@ -39,10 +39,13 @@
     "@create-figma-plugin/tsconfig": "^1.8.4",
     "@figma/plugin-typings": "*",
     "@types/debounce": "^1.2.1",
+    "hyphen": "^1.6.4",
     "typescript": "*"
   },
   "scripts": {
+    "postinstall": "npm run build:text",
     "build": "build-figma-plugin --typecheck --minify",
+    "build:text": "node text/hyphenateText.js",
     "watch": "build-figma-plugin --typecheck --watch"
   }
 }

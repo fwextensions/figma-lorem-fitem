@@ -1,12 +1,18 @@
 import {on, showUI} from "@create-figma-plugin/utilities";
 import {debounce} from "debounce";
-import {findInGroups, loadFontsAsync, processSelection} from "../utils/plugin";
+import {
+	findInGroups,
+	loadFontsAsync,
+	processSelection,
+	selection
+} from "../utils/plugin";
 import {appendRandomText, getRandomSentence} from "./sentences"
 import {appendText, getWordCount, splitWords} from "../utils/text";
 import {
 	getNodeSettings,
 	getPluginSettings,
 	NodeSettings,
+	PluginSettings,
 	setNodeSettings,
 	setPluginSettings
 } from "../utils/settings";
@@ -22,9 +28,13 @@ const relaunchButtons = {
 const getSentenceCountCache: Record<string, () => number> = {
 	"0": () => 0
 };
+const checkSelectionInterval = 1000;
 
 
+let lastPluginSettings: PluginSettings;
 let lastNodeSettings: NodeSettings;
+let lastNodeSizeHash: string;
+let selectionTimer: number;
 
 
 function createGetSentenceCount(
@@ -193,6 +203,39 @@ function updateNodeRelaunchButtons(
 }
 
 
+async function refitTextNodes(
+	nodes: TextNode[],
+	nodeSettings: NodeSettings
+)
+{
+	for (const node of nodes) {
+		if (node.textAutoResize !== "WIDTH_AND_HEIGHT") {
+			await loadFontsAsync(node);
+			updateNodeText(node, nodeSettings);
+		}
+	}
+}
+
+
+function getNodeSizeHash(
+	nodes: LayoutMixin[]
+): string
+{
+	return nodes.map(({
+		absoluteRenderBounds,
+		width: nodeWidth,
+		height: nodeHeight
+	}) => {
+			// absoluteRenderBounds will be null if the selected text node is
+			// invisible, so fall back to the bounding box width/height
+		const {width, height} = absoluteRenderBounds
+			|| { width: nodeWidth, height: nodeHeight };
+
+		return `${width.toFixed(1)}x${height.toFixed(1)}`;
+	}).join("|");
+}
+
+
 const handleSettingsChanged = debounce(async (settings: NodeSettings) => {
 	if (
 		!lastNodeSettings
@@ -205,18 +248,50 @@ const handleSettingsChanged = debounce(async (settings: NodeSettings) => {
 
 // TODO: updating text elements in auto layouts doesn't seem to work?
 		for (const node of findInGroups("TEXT")) {
-			await loadFontsAsync(node);
-			updateNodeSettings(node, settings);
-			updateNodeText(node, settings);
-			updateNodeRelaunchButtons(node);
+			if (node.textAutoResize !== "WIDTH_AND_HEIGHT") {
+				await loadFontsAsync(node);
+				updateNodeSettings(node, settings);
+				updateNodeText(node, settings);
+				updateNodeRelaunchButtons(node);
+			}
 		}
 	}
 }, 500);
 
 
+async function handleSelectionChanged()
+{
+	const selectedTextNodes = findInGroups("TEXT");
+
+		// since the selection has changed, clear any pending timer from the
+		// previous selection
+	clearInterval(selectionTimer);
+
+	if (selectedTextNodes.length) {
+			// since the selection just changed and includes text nodes, update
+			// them at least once, even if their size doesn't subsequently change
+		await refitTextNodes(selectedTextNodes, lastNodeSettings);
+		lastNodeSizeHash = getNodeSizeHash(selectedTextNodes);
+
+		selectionTimer = setInterval(async () => {
+			const nodeSizeHash = getNodeSizeHash(selectedTextNodes);
+
+				// only update the selected text nodes if they've actually
+				// changed size
+			if (nodeSizeHash !== lastNodeSizeHash) {
+				lastNodeSizeHash = nodeSizeHash;
+				await refitTextNodes(selectedTextNodes, lastNodeSettings);
+			}
+		}, checkSelectionInterval);
+	}
+}
+
+
 export default async function LoremFitem()
 {
 	const settings = await getPluginSettings();
+
+	lastPluginSettings = settings;
 
 	on("settingsChanged", handleSettingsChanged);
 
@@ -224,27 +299,32 @@ export default async function LoremFitem()
 		// UI is closed
 	figma.on("close", () => handleSettingsChanged.flush());
 
+	figma.on("selectionchange", handleSelectionChanged);
+
 	switch (figma.command) {
 		case "update":
-			await processSelection("TEXT", async (node) => {
-				await loadFontsAsync(node);
-				updateNodeText(node, settings.nodeSettings);
-			});
+			await refitTextNodes(selection("TEXT"), settings.nodeSettings);
 			figma.closePlugin();
 			break;
 
 		case "randomize":
 			await processSelection("TEXT", async (node) => {
-				await loadFontsAsync(node);
-				node.characters = "";
-				node.setPluginData("text", "");
-				updateNodeText(node, settings.nodeSettings);
+				if (node.textAutoResize !== "WIDTH_AND_HEIGHT") {
+					await loadFontsAsync(node);
+					node.characters = "";
+					node.setPluginData("text", "");
+					updateNodeText(node, settings.nodeSettings);
+				}
 			});
 			figma.closePlugin();
 			break;
 
 		default:
 			showUI({}, { settings: settings.nodeSettings });
+
+				// since we just opened the UI, treat any existing selection
+				// as "changed" so that we start the timer to track changes
+			await handleSelectionChanged();
 			break;
 	}
 }

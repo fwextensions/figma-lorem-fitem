@@ -22,14 +22,26 @@ function Plugin({ settings }: PluginProps) {
 	const [showParagraphs, setShowParagraphs] = useState(settings.showParagraphs);
 	const [paraMinSentences, setParaMinSentences] = useState(settings.paraMinSentences);
 	const [paraMaxSentences, setParaMaxSentences] = useState(settings.paraMaxSentences);
+	const [isMounted, setIsMounted] = useState(false);
 
 	useEffect(() => {
-		emit("settingsChanged", {
-			showParagraphs,
-			paraMinSentences,
-			paraMaxSentences
-		});
+			// when the component first mounts, this effect will be triggered,
+			// since these values will have just changed by virtue of being set
+			// to the prop.  we don't want to notify the main script because it
+			// already has the stored settings.  we only want to notify it when
+			// the user changes a setting.
+		if (isMounted) {
+			emit("settingsChanged", {
+				showParagraphs,
+				paraMinSentences,
+				paraMaxSentences
+			});
+		}
 	}, [showParagraphs, paraMinSentences, paraMaxSentences]);
+
+	useEffect(() => {
+		setIsMounted(true);
+	}, []);
 
 	return (
 		<Container space="medium">

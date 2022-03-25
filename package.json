@@ -2,7 +2,6 @@
   "name": "lorem-fitem",
   "version": "0.0.1",
   "description": "Your Figma plugin",
-  "main": "code.js",
   "author": "John Dunning",
   "license": "",
   "figma-plugin": {

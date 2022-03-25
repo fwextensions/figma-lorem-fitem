@@ -114,20 +114,18 @@ function updateNodeText(
 	let wordsPerPx = height / getWordCount(visibleText);
 // TODO: when the text is empty, getWordCount always returns 1, but we should special case that.  have some other way to calc it
 	let heightDelta = targetHeight - height;
-	let alreadyReducedText = false;
 	let loops = 0;
 //console.log("start", targetHeight, height, heightDelta, wordsPerPx, `|${visibleText}|\n`, `|${storedText}|`);
 
-	while (heightDelta !== 0 && loops < 5) {
+		// if the text is taller than the target, let it loop more so that it
+		// always has a chance to reduce the text to fit
+	while ((heightDelta < 0 && loops < 10) || (heightDelta > 3 && loops < 5)) {
 		if (heightDelta < 0) {
-				// keep track of having already cut down the text, so we don't
-				// ping pong back and forth across the target height
-			alreadyReducedText = true;
 			visibleText = visibleText
 				.split(spacePattern)
 				.slice(0, Math.min(-1, Math.round(heightDelta / wordsPerPx)))
 				.join(" ");
-		} else if (!alreadyReducedText) {
+		} else {
 			const targetWordCount = Math.max(1, Math.round(heightDelta / wordsPerPx));
 			let newWords = getAvailableWords(visibleText, storedText);
 			const newWordCount = newWords.length;
@@ -144,8 +142,6 @@ function updateNodeText(
 //console.log(loops, "add text",  targetWordCount, newWords.length, newWords);
 
 			visibleText = appendText(visibleText, newWords.slice(0, targetWordCount));
-		} else {
-			break;
 		}
 //console.log(loops, heightDelta, visibleText);
 
@@ -153,7 +149,7 @@ function updateNodeText(
 		height = node.height;
 		wordsPerPx = height / getWordCount(visibleText);
 		heightDelta = targetHeight - height;
-console.log(loops, "after adding text", heightDelta, wordsPerPx);
+console.log(loops, "after adding text", targetHeight, height, heightDelta, wordsPerPx);
 		loops++;
 	}
 
@@ -222,16 +218,21 @@ function getNodeSizeHash(
 ): string
 {
 	return nodes.map(({
+		layoutAlign,
 		absoluteRenderBounds,
-		width: nodeWidth,
-		height: nodeHeight
+		width,
+		height
 	}) => {
-			// absoluteRenderBounds will be null if the selected text node is
-			// invisible, so fall back to the bounding box width/height
-		const {width, height} = absoluteRenderBounds
-			|| { width: nodeWidth, height: nodeHeight };
+			// if a text node is in a frame and stretched to fit the frame, its
+			// height will be reported as the frame height, not its actual
+			// height, so in that case, use its absoluteRenderBounds.  that will
+			// be null if the selected text node is invisible, so fall back to
+			// the bounding box width/height in that case.
+		const {width: w, height: h} = layoutAlign !== "INHERIT" && absoluteRenderBounds
+			? absoluteRenderBounds
+			: { width, height };
 
-		return `${width.toFixed(1)}x${height.toFixed(1)}`;
+		return `${w.toFixed(1)}x${h.toFixed(1)}`;
 	}).join("|");
 }
 
@@ -279,6 +280,7 @@ async function handleSelectionChanged()
 				// only update the selected text nodes if they've actually
 				// changed size
 			if (nodeSizeHash !== lastNodeSizeHash) {
+//console.log("nodeSizeHash", nodeSizeHash, lastNodeSizeHash);
 				lastNodeSizeHash = nodeSizeHash;
 				await refitTextNodes(selectedTextNodes, lastNodeSettings);
 			}

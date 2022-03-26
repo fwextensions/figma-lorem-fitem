@@ -1,4 +1,4 @@
-import {on, showUI} from "@create-figma-plugin/utilities";
+import {emit, on, showUI} from "@create-figma-plugin/utilities";
 import {debounce} from "debounce";
 import {
 	findInGroups,
@@ -36,6 +36,12 @@ let settings: PluginSettings;
 let lastNodeSettings: NodeSettings;
 let lastNodeSizeHash: string;
 let selectionTimer: number;
+
+
+function getSelectedPlaceholders(): TextNode[]
+{
+	return findInGroups("TEXT", node => hasNodeSettings(node));
+}
 
 
 function createGetSentenceCount(
@@ -214,6 +220,18 @@ async function refitTextNodes(
 }
 
 
+async function randomizeText(
+	nodes: TextNode[])
+{
+	for (const node of nodes) {
+		await loadFontsAsync(node);
+		node.characters = "";
+		node.setPluginData("text", "");
+		updateNodeText(node, settings.nodeSettings);
+	}
+}
+
+
 function getNodeSizeHash(
 	nodes: LayoutMixin[]
 ): string
@@ -265,29 +283,31 @@ async function handleSelectionChanged()
 {
 		// look for text nodes that have already had settings applied to them,
 		// so that we don't try to refit non-Lorem Fitem text
-	const selectedTextNodes = findInGroups("TEXT", node => hasNodeSettings(node));
-console.log("handleSelectionChanged", selectedTextNodes.length);
+	const nodes = getSelectedPlaceholders();
+console.log("handleSelectionChanged", nodes.length);
+
+	emit("selectionChanged", nodes.length);
 
 		// since the selection has changed, clear any pending timer from the
 		// previous selection
 	clearInterval(selectionTimer);
 
-	if (selectedTextNodes.length) {
+	if (nodes.length) {
 			// since the selection just changed and includes text nodes, update
 			// them at least once, even if their size doesn't subsequently change
 // TODO: lastNodeSettings may be undefined here for some reason
-		await refitTextNodes(selectedTextNodes, lastNodeSettings);
-		lastNodeSizeHash = getNodeSizeHash(selectedTextNodes);
+		await refitTextNodes(nodes, lastNodeSettings);
+		lastNodeSizeHash = getNodeSizeHash(nodes);
 
 		selectionTimer = setInterval(async () => {
-			const nodeSizeHash = getNodeSizeHash(selectedTextNodes);
+			const nodeSizeHash = getNodeSizeHash(nodes);
 
 				// only update the selected text nodes if they've actually
 				// changed size
 			if (nodeSizeHash !== lastNodeSizeHash) {
 //console.log("nodeSizeHash", nodeSizeHash, lastNodeSizeHash);
 				lastNodeSizeHash = nodeSizeHash;
-				await refitTextNodes(selectedTextNodes, lastNodeSettings);
+				await refitTextNodes(nodes, lastNodeSettings);
 			}
 		}, checkSelectionInterval);
 	}
@@ -312,9 +332,9 @@ async function handleAdd()
 }
 
 
-function handleRandomize()
+async function handleRandomize()
 {
-console.log("handleRandomize");
+	await randomizeText(getSelectedPlaceholders());
 }
 
 
@@ -339,21 +359,20 @@ export default async function LoremFitem()
 			break;
 
 		case "randomize":
-			await processSelection("TEXT", async (node) => {
-				if (node.textAutoResize !== "WIDTH_AND_HEIGHT") {
-					await loadFontsAsync(node);
-					node.characters = "";
-					node.setPluginData("text", "");
-					updateNodeText(node, settings.nodeSettings);
-				}
-			});
+			await randomizeText(getSelectedPlaceholders());
 			figma.closePlugin();
 			break;
 
 		default:
 			showUI(
-				{ width: 270, height: 210 },
-				{ settings: settings.nodeSettings }
+				{
+					width: 270,
+					height: 210
+				},
+				{
+					settings: settings.nodeSettings,
+					selection: getSelectedPlaceholders().length
+				}
 			);
 
 				// since we just opened the UI, treat any existing selection

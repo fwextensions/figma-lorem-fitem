@@ -16,10 +16,11 @@ import {NumericInput} from "./NumericInput";
 
 
 interface PluginProps {
-	settings: NodeSettings
+	settings: NodeSettings,
+	selection: number
 }
 
-function Plugin({ settings }: PluginProps) {
+function Plugin({ settings, selection }: PluginProps) {
 	const [showParagraphs, setShowParagraphs] = useState(settings.showParagraphs);
 	const [paraMinSentences, setParaMinSentences] = useState(settings.paraMinSentences);
 	const [paraMaxSentences, setParaMaxSentences] = useState(settings.paraMaxSentences);
@@ -94,6 +95,7 @@ function Plugin({ settings }: PluginProps) {
 				</Button>
 				<Button
 					id="randomize"
+					disabled={!selection}
 					fullWidth
 				>
 					Randomize Placeholder Text

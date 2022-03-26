@@ -1,6 +1,7 @@
 import {h} from "preact"
 import {useEffect, useState} from "preact/compat";
 import {
+	Button,
 	Checkbox,
 	Container,
 	Inline,
@@ -43,6 +44,12 @@ function Plugin({ settings }: PluginProps) {
 		setIsMounted(true);
 	}, []);
 
+	const handleButtonClick = (event: MouseEvent) => {
+		const target = event.target as HTMLButtonElement;
+
+		emit(target.id);
+	};
+
 	return (
 		<Container space="medium">
 			<VerticalSpace space="medium" />
@@ -75,7 +82,23 @@ function Plugin({ settings }: PluginProps) {
 					</Inline>
 				</Stack>
 			</Stack>
-			<VerticalSpace space="medium" />
+			<VerticalSpace space="large" />
+			<Stack space="medium"
+				onClick={handleButtonClick}
+			>
+				<Button
+					id="add"
+					fullWidth
+				>
+					Add Placeholder Text Layer
+				</Button>
+				<Button
+					id="randomize"
+					fullWidth
+				>
+					Randomize Placeholder Text
+				</Button>
+			</Stack>
 		</Container>
 	)
 }

@@ -32,7 +32,7 @@ const getSentenceCountCache: Record<string, () => number> = {
 const checkSelectionInterval = 1000;
 
 
-let lastPluginSettings: PluginSettings;
+let settings: PluginSettings;
 let lastNodeSettings: NodeSettings;
 let lastNodeSizeHash: string;
 let selectionTimer: number;
@@ -266,6 +266,7 @@ async function handleSelectionChanged()
 		// look for text nodes that have already had settings applied to them,
 		// so that we don't try to refit non-Lorem Fitem text
 	const selectedTextNodes = findInGroups("TEXT", node => hasNodeSettings(node));
+console.log("handleSelectionChanged", selectedTextNodes.length);
 
 		// since the selection has changed, clear any pending timer from the
 		// previous selection
@@ -293,13 +294,37 @@ async function handleSelectionChanged()
 }
 
 
+async function handleAdd()
+{
+	const node = figma.createText();
+	const {center} = figma.viewport;
+	const {nodeSettings} = settings;
+
+	node.x = center.x - 100;
+	node.y = center.y - 100;
+	node.resize(200, 200);
+
+	await figma.loadFontAsync({ family: "Roboto", style: "Regular" });
+	setNodeSettings(node, nodeSettings);
+	updateNodeText(node, nodeSettings);
+	updateNodeRelaunchButtons(node);
+	figma.currentPage.selection = [node];
+}
+
+
+function handleRandomize()
+{
+console.log("handleRandomize");
+}
+
+
 export default async function LoremFitem()
 {
-	const settings = await getPluginSettings();
-
-	lastPluginSettings = settings;
+	settings = await getPluginSettings();
 
 	on("settingsChanged", handleSettingsChanged);
+	on("add", handleAdd);
+	on("randomize", handleRandomize);
 
 		// in case there's a debounced call waiting, flush it when the plugin
 		// UI is closed
@@ -326,7 +351,10 @@ export default async function LoremFitem()
 			break;
 
 		default:
-			showUI({}, { settings: settings.nodeSettings });
+			showUI(
+				{ width: 270, height: 210 },
+				{ settings: settings.nodeSettings }
+			);
 
 				// since we just opened the UI, treat any existing selection
 				// as "changed" so that we start the timer to track changes

@@ -35,21 +35,22 @@ export async function processSelection<T extends NodeType>(
 }
 
 
-export function findInGroups<T extends NodeType>(
-	filterType: T
-): Array<{ type: T } & SceneNode>
+export function findInGroups<T extends NodeType, N extends { type: T } & SceneNode>(
+	filterType: T,
+	filterFunc?: (node: SceneNode) => boolean
+): Array<N>
 {
 	let result: SceneNode[] = [];
 
 	figma.currentPage.selection.forEach((node) => {
 		traverseNode(node, (node) => {
-			if (node.type === filterType) {
+			if (node.type === filterType && (!filterFunc || filterFunc(node))) {
 				result.push(node);
 			}
 		})
 	});
 
-	return result as Array<{ type: T } & SceneNode>;
+	return result as Array<N>;
 }
 
 

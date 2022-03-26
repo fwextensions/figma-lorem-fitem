@@ -1,6 +1,9 @@
 import {loadSettingsAsync, saveSettingsAsync} from "@create-figma-plugin/utilities";
 
 
+const PluginSettingsKey = "settings";
+
+
 export interface NodeSettings {
 	showParagraphs: boolean,
 	paraMinSentences: number,
@@ -43,7 +46,7 @@ export function getNodeSettings(
 	node: SceneNode
 ): NodeSettings
 {
-	return JSON.parse(node.getPluginData("settings") || "null");
+	return JSON.parse(node.getPluginData(PluginSettingsKey) || "null");
 }
 
 
@@ -52,5 +55,13 @@ export function setNodeSettings(
 	settings: NodeSettings
 )
 {
-	node.setPluginData("settings", JSON.stringify(settings));
+	node.setPluginData(PluginSettingsKey, JSON.stringify(settings));
+}
+
+
+export function hasNodeSettings(
+	node: SceneNode
+): boolean
+{
+	return node.getPluginDataKeys().includes(PluginSettingsKey);
 }

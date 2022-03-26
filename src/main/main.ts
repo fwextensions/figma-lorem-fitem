@@ -11,6 +11,7 @@ import {appendText, getWordCount, splitWords} from "../utils/text";
 import {
 	getNodeSettings,
 	getPluginSettings,
+	hasNodeSettings,
 	NodeSettings,
 	PluginSettings,
 	setNodeSettings,
@@ -262,7 +263,9 @@ const handleSettingsChanged = debounce(async (settings: NodeSettings) => {
 
 async function handleSelectionChanged()
 {
-	const selectedTextNodes = findInGroups("TEXT");
+		// look for text nodes that have already had settings applied to them,
+		// so that we don't try to refit non-Lorem Fitem text
+	const selectedTextNodes = findInGroups("TEXT", node => hasNodeSettings(node));
 
 		// since the selection has changed, clear any pending timer from the
 		// previous selection
@@ -271,6 +274,7 @@ async function handleSelectionChanged()
 	if (selectedTextNodes.length) {
 			// since the selection just changed and includes text nodes, update
 			// them at least once, even if their size doesn't subsequently change
+// TODO: lastNodeSettings may be undefined here for some reason
 		await refitTextNodes(selectedTextNodes, lastNodeSettings);
 		lastNodeSizeHash = getNodeSizeHash(selectedTextNodes);
 

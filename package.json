@@ -1,7 +1,7 @@
 {
   "name": "lorem-fitem",
   "version": "0.0.1",
-  "description": "Your Figma plugin",
+  "description": "Create placeholder text layers.",
   "author": "John Dunning",
   "license": "",
   "figma-plugin": {
@@ -11,18 +11,18 @@
     "id": "1080322942020337214",
     "name": "Lorem Fit'em",
     "main": "src/main/main.ts",
-    "ui": "src/ui/ui.tsx",
+    "ui": "src/ui/index.tsx",
     "relaunchButtons": {
       "update": {
         "name": "Update placeholder text",
         "main": "src/main/main.ts",
-        "ui": "src/ui/ui.tsx",
+        "ui": "src/ui/index.tsx",
         "multipleSelection": true
       },
       "randomize": {
         "name": "Randomize placeholder text",
         "main": "src/main/main.ts",
-        "ui": "src/ui/ui.tsx",
+        "ui": "src/ui/index.tsx",
         "multipleSelection": true
       }
     }

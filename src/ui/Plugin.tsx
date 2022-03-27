@@ -5,22 +5,22 @@ import {
 	Checkbox,
 	Container,
 	Inline,
-	render,
 	Stack,
 	Text,
 	VerticalSpace
 } from "@create-figma-plugin/ui"
 import {emit} from "@create-figma-plugin/utilities";
-import {NodeSettings} from "../utils/settings";
 import {NumericInput} from "./NumericInput";
 
 
 interface PluginProps {
-	settings: NodeSettings,
-	selection: number
+	usePluginContext: () => { state: object, dispatch: (action: object) => void }
 }
 
-function Plugin({ settings, selection }: PluginProps) {
+// TODO: trying to type usePluginContext kicks off a series of other type errors
+//export default function Plugin({ usePluginContext }: PluginProps) {
+export default function Plugin({ usePluginContext }: any) {
+	const {state: {settings, selection}, dispatch} = usePluginContext();
 	const [showParagraphs, setShowParagraphs] = useState(settings.showParagraphs);
 	const [paraMinSentences, setParaMinSentences] = useState(settings.paraMinSentences);
 	const [paraMaxSentences, setParaMaxSentences] = useState(settings.paraMaxSentences);
@@ -33,10 +33,13 @@ function Plugin({ settings, selection }: PluginProps) {
 			// already has the stored settings.  we only want to notify it when
 			// the user changes a setting.
 		if (isMounted) {
-			emit("settingsChanged", {
-				showParagraphs,
-				paraMinSentences,
-				paraMaxSentences
+			dispatch({
+				key: "settings",
+				value: {
+					showParagraphs,
+					paraMinSentences,
+					paraMaxSentences
+				}
 			});
 		}
 	}, [showParagraphs, paraMinSentences, paraMaxSentences]);
@@ -104,6 +107,3 @@ function Plugin({ settings, selection }: PluginProps) {
 		</Container>
 	)
 }
-
-
-export default render(Plugin);

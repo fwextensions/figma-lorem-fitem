@@ -286,7 +286,7 @@ async function handleSelectionChanged()
 	const nodes = getSelectedPlaceholders();
 console.log("handleSelectionChanged", nodes.length);
 
-	emit("selectionChanged", nodes.length);
+	emit("context:selection", nodes.length);
 
 		// since the selection has changed, clear any pending timer from the
 		// previous selection
@@ -342,7 +342,7 @@ export default async function LoremFitem()
 {
 	settings = await getPluginSettings();
 
-	on("settingsChanged", handleSettingsChanged);
+	on("context:settings", handleSettingsChanged);
 	on("add", handleAdd);
 	on("randomize", handleRandomize);
 
